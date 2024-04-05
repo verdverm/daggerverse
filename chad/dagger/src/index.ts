@@ -14,6 +14,8 @@
  * if appropriate. All modules should have a short description.
  */
 
+import { readFileSync } from 'fs'
+
 import { dag, Container, Directory, object, func } from "@dagger.io/dagger"
 
 import cfg from './config';
@@ -69,10 +71,21 @@ class Chad {
    * TODO, add init to write out cue.mod contents?
    */
   @func()
-  init(stringArg: string): Container {
+  init(name: string): Container {
     return dag.container()
       .from("alpine:latest")
-      .withExec(["echo", stringArg])
+      .withExec(["echo", name])
+  }
+
+  @func()
+  async hack(): Promise<string> {
+    const src = dag.currentModule().source()
+    const f = src.file("src/index.ts")
+    return dag.container()
+      .from("alpine:latest")
+      .withFile("/hack.ts", f)
+      .withExec(["cat", "/hack.ts"])
+      .stdout()
   }
 
   /**
