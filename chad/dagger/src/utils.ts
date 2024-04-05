@@ -17,13 +17,13 @@ export function addCue(c: Container): Container {
 
 export function addHelm(c: Container): Container {
   const url = `https://get.helm.sh/helm-${cfg.helmVersion}-linux-amd64.tar.gz`
-  return addBin(c, url, "helm")
+  return addBin(c, url, "helm", "linux-amd64/")
 }
 
-export function addBin(c: Container, url: string, name: string): Container {
+export function addBin(c: Container, url: string, name: string, srcdir: string = ""): Container {
 	const targz = dag.http(url)
 
-	const bin = untargz(targz).file(name)
+	const bin = untargz(targz).file(srcdir + name)
 
 	return c
 		.withFile(`/usr/local/bin/${name}`, bin)
@@ -38,7 +38,7 @@ export function addCuelm(c: Container): Container {
 
 	return c
 		.withWorkdir("/work")
-		.withExec(["cue", "mod", "init", "verdverm.com/chad"])
+		.withExec(["bash", "-c", "cue mod init verdverm.com/chad"])
 		.withDirectory("/work/cue.mod/pkg/github.com/hofstadter-io/cuelm", repo)
 }
 

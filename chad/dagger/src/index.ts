@@ -19,6 +19,7 @@ import { dag, Container, Directory, object, func } from "@dagger.io/dagger"
 import cfg from './config';
 
 import { deployerImage } from "./images";
+import { addCue, addCuelm, addHelm, addTools } from "./utils";
 
 @object()
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -31,14 +32,6 @@ class Chad {
     return dag.container()
       .from("alpine:latest")
       .withExec(["echo", msg])
-      .stdout()
-  }
-
-  @func()
-  async gcloud(): Promise<string> {
-    return dag.container()
-      .from(cfg.gcloudVersion)
-      .withExec(["bash", "-c", "gcloud version"])
       .stdout()
   }
 
@@ -61,10 +54,14 @@ class Chad {
     echo "${cfg.cuelmVersion}"
     echo "\n"
 
+    echo "module"
+    cat cue.mod/module.cue
     `
+
     return dag.container()
       .from(cfg.gcloudVersion)
-      .withExec(["bash", "-c", ""])
+      .with(addTools)
+      .withExec(["bash", "-c", script])
       .stdout()
   }
 
@@ -82,12 +79,20 @@ class Chad {
    * Returns lines that match a pattern in the files of the provided Directory
    */
   @func()
-  async view(dir: Directory): Promise<string> {
-    const d = await deployerImage()
-    return d
-      .withMountedDirectory("/work", dir)
-      .withWorkdir("/work")
-      .withExec(["cue", "eval", "."])
+  async view(dir: Directory, cmp: string, env: string, ver: string = "dirty"): Promise<string> {
+    const script = `
+    cue eval *.cue -e Apply \
+      -t version=${ver} \
+      -t environment=${env} \
+      -t component=${cmp}
+    `
+
+    return dag.container()
+      .from(cfg.gcloudVersion)
+      .with(addTools)
+      .withMountedDirectory("/work/k8s", dir)
+      .withWorkdir("/work/k8s")
+      .withExec(["bash", "-c", script])
       .stdout()
   }
 }
