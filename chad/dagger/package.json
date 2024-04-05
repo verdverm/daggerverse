@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@dagger.io/dagger": "./sdk"
+  }
+}
